@@ -60,13 +60,19 @@ contract PolygonZkEVMBridge is
     mapping(uint256 => uint256) public claimedBitMap;
 
     // keccak256(OriginNetwork || tokenAddress) --> Wrapped token address
-    mapping(bytes32 => address) public tokenInfoToWrappedToken;
+    mapping(bytes32 => address) private tokenInfoToWrappedToken;
 
     // Wrapped token Address --> Origin token information
     mapping(address => TokenInformation) public wrappedTokenToTokenInfo;
 
     // PolygonZkEVM address
     address public polygonZkEVMaddress;
+
+    address private gasToken;
+
+    // if send ETH, it will be turn to an wrapped token(WETH)
+    address private constant ethTokenAddress = address(1);
+    
 
     /**
      * @param _networkID networkID
@@ -78,12 +84,13 @@ contract PolygonZkEVMBridge is
     function initialize(
         uint32 _networkID,
         IBasePolygonZkEVMGlobalExitRoot _globalExitRootManager,
-        address _polygonZkEVMaddress
+        address _polygonZkEVMaddress,
+        address _gasTokenAddress
     ) external virtual initializer {
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonZkEVMaddress = _polygonZkEVMaddress;
-
+        gasToken = _gasTokenAddress;
         // Initialize OZ contracts
         __ReentrancyGuard_init();
     }
@@ -165,7 +172,35 @@ contract PolygonZkEVMBridge is
                 revert AmountDoesNotMatchMsgValue();
             }
 
+            if (networkID == 0) {
+                originTokenAddress = ethTokenAddress;
+                // Encode metadata
+                metadata = abi.encode("PETH", "PETH", 18);
+            }
+
             // Ether is treated as ether from mainnet
+            originNetwork = _MAINNET_NETWORK_ID;
+        } else if (networkID == 0 && token == gasToken) {
+            if (msg.value != 0) {
+                revert MsgValueNotZero();
+            }
+
+            // In order to support fee tokens check the amount received, not the transferred
+            uint256 balanceBefore = IERC20Upgradeable(token).balanceOf(
+                address(this)
+            );
+            IERC20Upgradeable(token).safeTransferFrom(
+                msg.sender,
+                address(this),
+                amount
+            );
+            uint256 balanceAfter = IERC20Upgradeable(token).balanceOf(
+                address(this)
+            );
+
+            // Override leafAmount with the received amount
+            leafAmount = balanceAfter - balanceBefore;
+
             originNetwork = _MAINNET_NETWORK_ID;
         } else {
             // Check msg.value is 0 if tokens are bridged
@@ -339,6 +374,23 @@ contract PolygonZkEVMBridge is
         if (originTokenAddress == address(0)) {
             // Transfer ether
             /* solhint-disable avoid-low-level-calls */
+            if (networkID == 0) {
+                IERC20Upgradeable(gasToken).safeTransfer(
+                    destinationAddress,
+                    amount
+                );
+                originTokenAddress = gasToken;
+            }
+
+            if (networkID == 1) {
+                (bool success, ) = destinationAddress.call{value: amount}(
+                    new bytes(0)
+                );
+                if (!success) {
+                    revert EtherTransferFailed();
+                }
+            }
+        } else if (originTokenAddress == ethTokenAddress && networkID == 0) {
             (bool success, ) = destinationAddress.call{value: amount}(
                 new bytes(0)
             );
