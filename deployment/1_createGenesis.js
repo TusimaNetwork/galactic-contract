@@ -35,6 +35,7 @@ async function main() {
     const networkIDL2 = 1;
     const globalExitRootL2Address = '0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa';
     const cdkValidiumAddressL2 = ethers.constants.AddressZero;
+    // const gasTokenAddress = ethers.constants.AddressZero;
 
     // deploy parameters
     const mandatoryDeploymentParameters = [
@@ -42,6 +43,7 @@ async function main() {
         'minDelayTimelock',
         'salt',
         'initialCDKValidiumDeployerOwner',
+        'gasTokenAddress'
     ];
 
     for (const parameterName of mandatoryDeploymentParameters) {
@@ -55,6 +57,7 @@ async function main() {
         minDelayTimelock,
         salt,
         initialCDKValidiumDeployerOwner,
+        gasTokenAddress
     } = deployParameters;
 
     // Load deployer
@@ -102,12 +105,15 @@ async function main() {
         initializeEmptyDataProxy,
     )).data;
 
+    console.log("deployParameters.gasTokenAddress:",deployParameters.gasTokenAddress);
+
     const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
             networkIDL2,
             globalExitRootL2Address,
             cdkValidiumAddressL2,
+            deployParameters.gasTokenAddress
         ],
     );
     const [proxyBridgeAddress] = await create2Deployment(

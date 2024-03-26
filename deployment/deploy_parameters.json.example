@@ -22,5 +22,6 @@
     "maxPriorityFeePerGas":"",
     "multiplierGas": "",
     "setupEmptyCommittee": true,
-    "committeeTimelock": false
+    "committeeTimelock": false,
+    "gasTokenAddress": "0x539a827822b2a532092b8A08919DCAC4B00bead1"
 }

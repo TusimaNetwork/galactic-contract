@@ -56,6 +56,7 @@ async function main() {
         'maticTokenAddress',
         'setupEmptyCommittee',
         'committeeTimelock',
+        'gasTokenAddress',
     ];
 
     for (const parameterName of mandatoryDeploymentParameters) {
@@ -84,6 +85,7 @@ async function main() {
         maticTokenAddress,
         setupEmptyCommittee,
         committeeTimelock,
+        gasTokenAddress,
     } = deployParameters;
 
     // Load provider
@@ -227,8 +229,8 @@ async function main() {
     // nonceProxyCDKValidium :Nonce globalExitRoot + 1 (proxy globalExitRoot) + 1 (impl cdk) = +2
     const nonceProxyCDKValidium = nonceProxyGlobalExitRoot + 2;
 
-    let precalculateGLobalExitRootAddress; let
-        precalculateCDKValidiumAddress;
+    let precalculateGLobalExitRootAddress; 
+    let precalculateCDKValidiumAddress;
 
     // Check if the contract is already deployed
     if (ongoingDeployment.PolygonZkEVMGlobalExitRoot && ongoingDeployment.cdkValidiumContract) {
@@ -240,17 +242,35 @@ async function main() {
         delete ongoingDeployment.cdkValidiumContract;
         fs.writeFileSync(pathOngoingDeploymentJson, JSON.stringify(ongoingDeployment, null, 1));
 
+        console.log("No Data");
+
         // Contracts are not deployed, normal deployment
         precalculateGLobalExitRootAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyGlobalExitRoot });
         precalculateCDKValidiumAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyCDKValidium });
     }
 
+    console.log("precalculateGLobalExitRootAddress:",precalculateGLobalExitRootAddress);
+
+    // //Deploy Token
+    // const ETHToken = await ethers.getContractFactory('ETHToken', deployer);
+    // const deployETHToken = (ETHToken.getDeployTransaction()).data;
+
+    // const [ETHTokenAddress, isETHTokenDeployed] = await create2Deployment();
+
+    // if (isETHTokenDeployed) {
+    //     console.log('#######################\n');
+    //     console.log('ETHToken deployed to:', ETHTokenAddress);
+    // } else {
+    //     console.log('#######################\n');
+    //     console.log('ETHToken was already deployed to:', ETHTokenAddress);
+    // }
     const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
             networkIDMainnet,
             precalculateGLobalExitRootAddress,
             precalculateCDKValidiumAddress,
+            deployParameters.gasTokenAddress,
         ],
     );
     const [proxyBridgeAddress, isBridgeProxyDeployed] = await create2Deployment(
