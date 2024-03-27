@@ -175,7 +175,7 @@ contract PolygonZkEVMBridge is
             if (networkID == 0) {
                 originTokenAddress = ethTokenAddress;
                 // Encode metadata
-                metadata = abi.encode("PETH", "PETH", 18);
+                metadata = abi.encode("tETH", "tETH", 18);
             }
 
             // Ether is treated as ether from mainnet
