@@ -95,6 +95,7 @@ module.exports = {
       },
     },
     sepolia: {
+      allowUnlimitedContractSize: true,
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
       accounts: {
         mnemonic: process.env.MNEMONIC || DEFAULT_MNEMONIC,

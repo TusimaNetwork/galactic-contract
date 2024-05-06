@@ -18,3 +18,6 @@ deployments
 upgrade_parameters.json
 docker/gethData/
 *.ignore/
+
+deployment/genesis.json
+tmp/
